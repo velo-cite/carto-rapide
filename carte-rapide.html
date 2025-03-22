@@ -88,7 +88,6 @@
             .then(response => response.json())
             .then(data => {
                 data.features.forEach(feature => {
-                    console.log(feature.properties.nom);
                     const ville = villes.find(v => v.nom === feature.properties.nom);
                     feature.properties.count = ville ? ville.count : 0;
                     if ('Saint-Louis-de-Montferrand' === feature.properties.nom) {
