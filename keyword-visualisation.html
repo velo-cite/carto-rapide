@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Keyword Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@300;600&display=swap');
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Raleway', sans-serif;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        const keywords = [
+            { name: "Paul", value: 43 },
+            { name: "Antoine B", value: 43 },
+            { name: "Yves", value: 28 },
+            { name: "Ludovic", value: 23 },
+            { name: "Marc", value: 18 },
+            { name: "Georges", value: 16 },
+            { name: "Virginie", value: 18 },
+            { name: "Pierre", value: 8 },
+            { name: "William", value: 6 },
+            { name: "Benoit", value: 5 },
+            { name: "Adrien", value: 4 },
+            { name: "Armand", value: 4 },
+            { name: "Samuel", value: 4 },
+            { name: "Olivier", value: 4 },
+            { name: "Matthieu", value: 3 },
+            { name: "Olivier", value: 3 },
+            { name: "Alain", value: 1 },
+            { name: "Catherine", value: 1 },
+            { name: "Clément", value: 1 },
+            { name: "Elias", value: 1 },
+            { name: "Groupe Route de Toulouse", value: 1 },
+            { name: "Lola", value: 2 },
+            { name: "Loïc", value: 3 },
+            { name: "Marie", value: 1 },
+            { name: "rédacteur clandestin !", value: 1 },
+            { name: "Charlotte", value: 1 },
+            { name: "Vélo-Cité !", value: 1 },
+        ];
+
+        const width = 1200;
+        const height = 1000;
+
+        const svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const sizeScale = d3.scaleLinear()
+            .domain([0, d3.max(keywords, d => d.value)])
+            .range([20, 100]);
+
+        const simulation = d3.forceSimulation(keywords)
+            .force("charge", d3.forceManyBody().strength(5))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(d => sizeScale(d.value) * 0.8 + 15).strength(1.5))
+            .on("tick", ticked);
+
+        const text = svg.selectAll("text")
+            .data(keywords)
+            .enter()
+            .append("text")
+            .attr("text-anchor", "middle")
+            .style("font-size", d => `${sizeScale(d.value)}px`)
+            .style("fill", (d, i) => color(i))
+            .style("font-weight", "600")
+            .text(d => d.name);
+
+        function ticked() {
+            text.attr("x", d => d.x)
+                .attr("y", d => d.y);
+        }
+    </script>
+</body>
+</html>
