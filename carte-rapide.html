@@ -53,8 +53,9 @@
 
         // Données des villes et occurrences
         const villes = [
+            {nom: "Ambès", count: 0},
             {nom: "Ambarès-et-Lagrave", count: 5},
-            {nom: "Artigues-près-Bordeaux", count: 4},
+            {nom: "Artigues-Près-Bordeaux", count: 4},
             {nom: "Bassens", count: 4},
             {nom: "Blanquefort", count: 4},
             {nom: "Bordeaux", count: 50},
@@ -87,6 +88,7 @@
             .then(response => response.json())
             .then(data => {
                 data.features.forEach(feature => {
+                    console.log(feature.properties.nom);
                     const ville = villes.find(v => v.nom === feature.properties.nom);
                     feature.properties.count = ville ? ville.count : 0;
                     if ('Saint-Louis-de-Montferrand' === feature.properties.nom) {
