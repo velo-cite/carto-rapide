@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Carte de la Métropole Bordelaise</title>
+    <script src="https://unpkg.com/maplibre-gl@3.4.0/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.4.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.1.0/chroma.min.js"></script>
+    <style>
+        html, body { margin:0; padding:0; }
+        #map { height: 100vh; width: 100vw; }
+        .label {
+            background-color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 12px;
+            box-shadow: 0 0 3px rgba(0,0,0,0.5);
+        }
+        #logo {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            z-index: 10;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <img id="logo" src="logo-VC-carte.png" width="75" height="75" alt="logo Vélo-Cité Bordeaux Métropole">
+    <script>
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: {
+                version: 8,
+                sources: {
+                    osm: {
+                        type: 'raster',
+                        tiles: ["https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"],
+                        tileSize: 256
+                    }
+                },
+                layers: [{
+                    id: 'osm-layer',
+                    type: 'raster',
+                    source: 'osm'
+                }]
+            },
+            center: [-0.57918, 44.8378],
+            zoom: 11
+        });
+
+
+        // Données des villes et occurrences
+        const villes = [
+            {nom: "Ambès", count: 0},
+            {nom: "Ambarès-et-Lagrave", count: 0},
+            {nom: "Artigues-Près-Bordeaux", count: 0},
+            {nom: "Bassens", count: 1},
+            {nom: "Blanquefort", count: 0},
+            {nom: "Bordeaux", count: 1},
+            {nom: "Bouliac", count: 0},
+            {nom: "Bruges", count: 1},
+            {nom: "Bègles", count: 1},
+            {nom: "Carbon-Blanc", count: 0},
+            {nom: "Cenon", count: 1},
+            {nom: "Eysines", count: 0},
+            {nom: "Floirac", count: 0},
+            {nom: "Gradignan", count: 1},
+            {nom: "Le Bouscat", count: 1},
+            {nom: "Le Haillan", count: 1},
+            {nom: "Le Taillan-Médoc", count: 1},
+            {nom: "Lormont", count: 1},
+            {nom: "Martignas-sur-Jalle", count: 1},
+            {nom: "Mérignac", count: 1},
+            {nom: "Parempuyre", count: 0},
+            {nom: "Pessac", count: 1},
+            {nom: "Saint-Aubin-de-Médoc", count: 1},
+            {nom: "Saint-Louis-de-Montferrand", count: 0},
+            {nom: "Saint-Médard-en-Jalles", count: 0},
+            {nom: "Saint-Vincent-de-Paul", count: 0},
+            {nom: "Talence", count: 1},
+            {nom: "Villenave-d'Ornon", count: 0},
+        ];
+
+        map.on('load', () => {
+            fetch('https://opendata.bordeaux-metropole.fr/api/explore/v2.1/catalog/datasets/fv_commu_s/exports/geojson?lang=fr&timezone=Europe%2FBerlin')
+            .then(response => response.json())
+            .then(data => {
+                data.features.forEach(feature => {
+                    const ville = villes.find(v => v.nom === feature.properties.nom);
+                    feature.properties.count = ville ? ville.count : 0;
+                    if ('Saint-Louis-de-Montferrand' === feature.properties.nom) {
+                        feature.properties.geo_point_2d.lat = 44.9625;
+                    }
+                    if ('Bassens' === feature.properties.nom) {
+                            feature.properties.geo_point_2d.lat = 44.91;
+                    }
+                    if ('Artigues-Près-Bordeaux' === feature.properties.nom) {
+                        feature.properties.geo_point_2d.lat = 44.8625;
+                    }
+
+                });
+
+                map.addSource('communes', {
+                    type: 'geojson',
+                    data: data
+                });
+
+                map.addLayer({
+                    id: 'communes-fill',
+                    type: 'fill',
+                    source: 'communes',
+                    paint: {
+                        'fill-color': [
+                            'case',
+                            ['>', ['get', 'count'], 0],
+                            ['interpolate', ['linear', 0], ['get', 'count'], 1, '#FFFFFF', 1, '#00CDFF'],
+                            '#ccc'
+                        ],
+                        'fill-opacity': 0.7
+                    }
+                });
+
+                map.addLayer({
+                    id: 'communes-border',
+                    type: 'line',
+                    source: 'communes',
+                    paint: {
+                        'line-color': '#FFF',
+                        'line-width': 1
+                    }
+                });
+
+                data.features
+                    .sort((a, b) => a.properties.count - b.properties.count)
+                    .forEach(feature => {
+                    const center = feature.properties.geo_point_2d;
+                    new maplibregl.Marker({
+                        element: createLabel(`${feature.properties.nom}: ${feature.properties.count}`, feature.properties.count)
+                    }).setLngLat(center).addTo(map);
+                });
+
+                const bounds = new maplibregl.LngLatBounds();
+                data.features.forEach(feature => {
+                    feature.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+                });
+                map.fitBounds(bounds, { padding: 20 });
+            });
+        });
+
+        function createLabel(text, count) {
+            const div = document.createElement('div');
+            div.className = 'label';
+            div.innerText = text;
+            div.zIndex = count;
+            return div;
+        }
+    </script>
+</body>
+</html>
